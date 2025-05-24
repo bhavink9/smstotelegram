@@ -84,7 +84,15 @@ def main():
         matched = any(f in body for f in filters)
 
         if matched:
-            msg = f"📩 *SMS Matched Filter*\n\nFrom: {sender}\nTime: {sms['received']}\n\n{sms.get('body', '')}"
+            msg = (
+                    "📩 *SMS Received* 📩\n"
+                    "------------------------------\n"
+                    f"*From:* {sender}\n"
+                    f"*Time:* {sms['received']}\n"
+                    "------------------------------\n"
+                    f"{sms.get('body', '')}\n"
+                    "------------------------------"
+            )
             for chat_id in users:
                 send_telegram_message(token, chat_id, msg)
             print(f"Forwarded SMS received at {sms['received']}")
