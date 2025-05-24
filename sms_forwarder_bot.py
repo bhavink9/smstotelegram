@@ -80,7 +80,7 @@ def main():
             continue  # skip already processed SMS
 
         body = sms.get("body", "").lower()
-        sender = last_sms.get("from") or last_sms.get("address") or last_sms.get("number") or "Unknown"
+        sender = sms.get("from") or last_sms.get("address") or last_sms.get("number") or "Unknown"
         matched = any(f in body for f in filters)
 
         if matched:
