@@ -3,6 +3,7 @@ import json
 import requests
 import datetime
 import time
+import sys
 
 CONFIG_FILE = "sms_forwarder_config.txt"
 LAST_TIME_FILE = "last_forward_time.txt"
@@ -84,12 +85,12 @@ def check_new_sms(filters, token, users, last_forward_time):
         if matched:
             msg = (
                 "📩 *SMS Received* 📩\n"
-                "------------------------------\n"
+                "------------------------------------------\n"
                 f"*From:* {sender}\n"
                 f"*Time:* {sms['received']}\n"
-                "------------------------------\n"
+                "------------------------------------------\n"
                 f"{sms.get('body', '')}\n"
-                "------------------------------"
+                "------------------------------------------"
             )
             for chat_id in users:
                 send_telegram_message(token, chat_id, msg)
@@ -106,10 +107,19 @@ def check_new_sms(filters, token, users, last_forward_time):
     return new_last_time
 
 def main():
-    if not os.path.exists(CONFIG_FILE):
+    reset = "--reset" in sys.argv
+
+    if reset or not os.path.exists(CONFIG_FILE):
         filters, token, users, interval = setup_config()
     else:
         filters, token, users, interval = load_config()
+
+    last_forward_time = load_last_forward_time()
+    print(f"📡 Starting SMS forwarder... Checking every {interval} seconds.\n")
+
+    while True:
+        last_forward_time = check_new_sms(filters, token, users, last_forward_time)
+        time.sleep(interval)
 
     last_forward_time = load_last_forward_time()
 
