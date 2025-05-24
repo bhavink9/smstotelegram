@@ -83,13 +83,12 @@ def check_new_sms(filters, token, users, last_forward_time):
         matched = any(f in body for f in filters)
 
         if matched:
-            model = get_phone_model()
+            device_name = get_device_name()
             msg = (
-                "📩 *SMS Received* 📩\n"
+                f"📩 *SMS Received from {device_name}* 📩\n"
                 "------------------------------------------\n"
                 f"*From:* {sender}\n"
                 f"*Time:* {sms['received']}\n"
-                f"*Device:* {model}\n"
                 "------------------------------------------\n"
                 f"{sms.get('body', '')}\n"
                 "------------------------------------------"
@@ -108,9 +107,9 @@ def check_new_sms(filters, token, users, last_forward_time):
 
     return new_last_time
 
-def get_phone_model():
+def get_device_name():
     try:
-        return os.popen("getprop ro.product.model").read().strip()
+        return os.popen("getprop net.hostname").read().strip()
     except:
         return "Unknown Device"
 
