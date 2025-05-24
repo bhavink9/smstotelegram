@@ -15,14 +15,16 @@ def setup_config():
     users = input("Enter recipient Telegram Chat IDs (comma-separated from @userinfobot): ").split(",")
     interval = input("Enter check interval in seconds (default 15): ").strip()
     interval = int(interval) if interval.isdigit() else 15
+    device_name = input("Enter a custom name for this device (e.g., BhavinPhone): ").strip()
 
     with open(CONFIG_FILE, "w") as f:
         f.write(','.join(filters) + "\n")
         f.write(token + "\n")
         f.write(','.join(users) + "\n")
         f.write(str(interval) + "\n")
+        f.write(device_name + "\n")
 
-    return filters, token, users, interval
+    return filters, token, users, interval, device_name
 
 def load_config():
     with open(CONFIG_FILE, "r") as f:
@@ -31,7 +33,8 @@ def load_config():
     token = lines[1].strip()
     users = [u.strip() for u in lines[2].split(",")]
     interval = int(lines[3]) if len(lines) >= 4 and lines[3].isdigit() else 15
-    return filters, token, users, interval
+    device_name = lines[4].strip() if len(lines) > 4 else "Unknown Device"
+    return filters, token, users, interval, device_name
 
 def load_last_forward_time():
     if not os.path.exists(LAST_TIME_FILE):
@@ -59,7 +62,7 @@ def send_telegram_message(token, chat_id, message):
     except Exception as e:
         print(f"❌ Failed to send message to {chat_id}: {e}")
 
-def check_new_sms(filters, token, users, last_forward_time):
+def check_new_sms(filters, token, users, last_forward_time, device_name):
     sms_data = os.popen("termux-sms-list -l 50").read()
     try:
         sms_list = json.loads(sms_data)
@@ -83,7 +86,6 @@ def check_new_sms(filters, token, users, last_forward_time):
         matched = any(f in body for f in filters)
 
         if matched:
-            device_name = get_device_name()
             msg = (
                 f"📩 *SMS Received from {device_name}* 📩\n"
                 "------------------------------------------\n"
@@ -107,25 +109,19 @@ def check_new_sms(filters, token, users, last_forward_time):
 
     return new_last_time
 
-def get_device_name():
-    try:
-        return os.popen("getprop net.hostname").read().strip()
-    except:
-        return "Unknown Device"
-
 def main():
     reset = "--reset" in sys.argv
 
     if reset or not os.path.exists(CONFIG_FILE):
-        filters, token, users, interval = setup_config()
+        filters, token, users, interval, device_name = setup_config()
     else:
-        filters, token, users, interval = load_config()
+        filters, token, users, interval, device_name = load_config()
 
     last_forward_time = load_last_forward_time()
     print(f"📡 Starting SMS forwarder... Checking every {interval} seconds.\n")
 
     while True:
-        last_forward_time = check_new_sms(filters, token, users, last_forward_time)
+        last_forward_time = check_new_sms(filters, token, users, last_forward_time, device_name)
         time.sleep(interval)
 
     last_forward_time = load_last_forward_time()
